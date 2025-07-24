@@ -1,5 +1,5 @@
-from audio import AudioCapture, AudioPlayback
-from models import VoiceConverter, RVCConverter, BitNetConverter, TraditionalConverter
+from audio.playback import AudioCapture, AudioPlayback
+from models.models import VoiceConverter, RVCConverter, BitNetConverter, TraditionalConverter
 import numpy as np
 import pyaudio
 import threading
@@ -126,92 +126,6 @@ class VoiceConversionFramework:
             
         return success
     
-
-# PERFORMANCE MONITORING
-
-class PerformanceMonitor:
-    """Monitor performance metrics for voice conversion"""
-    
-    def __init__(self):
-        self.metrics = {
-            "latency_samples": [],
-            "cpu_usage": [],
-            "memory_usage": [],
-            "audio_quality": []
-        }
-        
-    def record_latency(self, latency_ms: float):
-        """Record latency measurement"""
-        self.metrics["latency_samples"].append(latency_ms)
-        
-    def get_average_latency(self) -> float:
-        """Get average latency"""
-        if not self.metrics["latency_samples"]:
-            return 0.0
-        return np.mean(self.metrics["latency_samples"])
-        
-    def get_stats(self) -> Dict[str, Any]:
-        """Get comprehensive performance statistics"""
-        latency_samples = self.metrics["latency_samples"]
-        return {
-            "avg_latency_ms": np.mean(latency_samples) if latency_samples else 0,
-            "max_latency_ms": np.max(latency_samples) if latency_samples else 0,
-            "min_latency_ms": np.min(latency_samples) if latency_samples else 0,
-            "total_samples": len(latency_samples)
-        }
-        
-    def reset_metrics(self):
-        """Reset all metrics"""
-        for key in self.metrics:
-            self.metrics[key].clear()
-
-
-
-# VIRTUAL AUDIO DEVICE SYSTEM
-
-class VirtualAudioDevice:
-    """Creates a virtual audio device for applications to use"""
-    
-    def __init__(self, framework):
-        self.framework = framework
-        self.virtual_cable = None
-        self.device_name = "Voice Changer Virtual Device"
-        
-    def setup_virtual_device(self):
-        """Set up virtual audio routing"""
-        print(f"Setting up virtual audio device: {self.device_name}")
-        print("Applications can now select '{self.device_name}' as their microphone")
-        
-        # In a real implementation, you'd:
-        # 1. Create a virtual audio driver (Windows: Virtual Audio Cable, VAC)
-        # 2. Route processed audio to this virtual device
-        # 3. Applications see this as a real microphone
-        
-    def list_audio_devices(self):
-        """List all available audio input devices"""
-        audio = pyaudio.PyAudio()
-        devices = []
-        
-        print("\nAvailable Audio Input Devices:")
-        for i in range(audio.get_device_count()):
-            info = audio.get_device_info_by_index(i)
-            if info['maxInputChannels'] > 0:
-                devices.append({
-                    'index': i,
-                    'name': info['name'],
-                    'channels': info['maxInputChannels'],
-                    'sample_rate': int(info['defaultSampleRate'])
-                })
-                print(f"  {i}: {info['name']} (Channels: {info['maxInputChannels']})")
-        
-        audio.terminate()
-        return devices
-        
-    def select_input_device(self, device_index):
-        """Select specific input device for capture"""
-        self.framework.audio_capture.input_device_index = device_index
-        print(f"Selected input device index: {device_index}")
-
 class GameVoiceChanger(VoiceConversionFramework):
     """Extended framework specifically for game voice changing"""
     

@@ -1,6 +1,8 @@
 """This file contains the abstract base class for voice conversion models and their implementations."""
 
 from abc import ABC, abstractmethod
+import numpy as np
+from typing import Dict, Any
 
 class VoiceConverter(ABC):
     """Abstract base class for all voice conversion models"""
@@ -40,6 +42,30 @@ class VoiceConverter(ABC):
         }
 
 # MODEL IMPLEMENTATIONS ( in progess )
+
+class DummyConverter(VoiceConverter):
+    """Dummy voice conversion model for testing purposes"""
+    
+    def __init__(self):
+        super().__init__("Dummy")
+        
+    def load_model(self, model_path: str, **kwargs):
+        """Load dummy model (no actual loading)"""
+        self.is_loaded = True
+        self.model_info = {
+            "type": "Dummy",
+            "model_path": model_path,
+            "sample_rate": kwargs.get("sample_rate", 44100)
+        }
+        return True
+        
+    def convert(self, audio_input: np.ndarray) -> np.ndarray:
+        """Return input audio without modification"""
+        return audio_input
+        
+    def unload_model(self):
+        """Unload dummy model (no actual unloading)"""
+        self.is_loaded = False
 
 class RVCConverter(VoiceConverter):
     """RVC (Retrieval-based Voice Conversion) implementation"""
