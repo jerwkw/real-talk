@@ -17,55 +17,85 @@ class LightweightVoiceConverter(nn.Module):
             nn.Conv1d(hidden_dim, input_features, 3, padding=1)
         )
         
-        # Mel spectrogram transform
-        self.mel_transform = librosa.filters.mel(
-            sr=22050, n_fft=1024, n_mels=input_features
-        )
-        
-    def audio_to_mel(self, audio):
-        """Convert audio to mel spectrogram"""
-        # STFT
-        stft = librosa.stft(audio, n_fft=1024, hop_length=256)
-        magnitude = np.abs(stft)
-        
-        # Convert to mel scale
-        mel_spec = np.dot(self.mel_transform, magnitude)
-        mel_spec = np.log(mel_spec + 1e-8)  # Log scale
-        
-        return mel_spec
-    
-    def mel_to_audio(self, mel_spec):
-        """Convert mel spectrogram back to audio (simplified)"""
-        # This is a simplified inverse - in practice you'd use a proper vocoder
-        # For training, we'll work in mel space and convert back at inference
-        
-        # Inverse mel scale (approximate)
-        mel_spec_exp = np.exp(mel_spec) - 1e-8
-        
-        # Inverse mel filtering (approximate - not perfect but fast)
-        magnitude = np.dot(np.linalg.pinv(self.mel_transform), mel_spec_exp)
-        
-        # Create phase (random - this is why quality won't be perfect)
-        phase = np.random.uniform(-np.pi, np.pi, magnitude.shape)
-        
-        # Reconstruct audio
-        stft_complex = magnitude * np.exp(1j * phase)
-        audio = librosa.istft(stft_complex, hop_length=256)
-        
-        return audio
-        
     def forward(self, mel_input):
         """Forward pass - convert mel spectrogram"""
         return self.encoder(mel_input)
 
+class RealtimeAudioProcessor:
+    """Handles audio ↔ mel conversion and real-time processing"""
+    def __init__(self, model, sample_rate=44100, n_fft=1024, hop_length=256, n_mels=80):
+        self.model = model
+        self.sample_rate = sample_rate
+        self.n_fft = n_fft
+        self.hop_length = hop_length
+        self.n_mels = n_mels
+        
+        # Create mel filter bank
+        self.mel_filter = librosa.filters.mel(
+            sr=sample_rate, n_fft=n_fft, n_mels=n_mels
+        )
+        
+        # For audio reconstruction (you'd use a proper vocoder here)
+        self.inv_mel_filter = np.linalg.pinv(self.mel_filter)
+        
+    def audio_to_mel(self, audio):
+        """Convert audio to mel spectrogram tensor"""
+        # STFT
+        stft = librosa.stft(audio, n_fft=self.n_fft, hop_length=self.hop_length)
+        magnitude = np.abs(stft)
+        
+        # Convert to mel scale
+        mel_spec = np.dot(self.mel_filter, magnitude)
+        mel_spec_log = np.log(mel_spec + 1e-8)
+        
+        return torch.FloatTensor(mel_spec_log)
+    
+    def mel_to_audio(self, mel_tensor):
+        """Convert mel spectrogram back to audio (simplified)"""
+        mel_spec = mel_tensor.detach().cpu().numpy()
+        
+        # Inverse log
+        mel_spec_exp = np.exp(mel_spec) - 1e-8
+        
+        # Approximate inverse mel filtering
+        magnitude = np.dot(self.inv_mel_filter, mel_spec_exp)
+        
+        # Random phase (this is why we need a proper vocoder for quality)
+        phase = np.random.uniform(-np.pi, np.pi, magnitude.shape)
+        
+        # Reconstruct
+        stft_complex = magnitude * np.exp(1j * phase)
+        audio = librosa.istft(stft_complex, hop_length=self.hop_length)
+        
+        return audio
+    
+    def process_realtime(self, audio_chunk):
+        """Process audio chunk in real-time"""
+        with torch.no_grad():
+            # Audio → Mel
+            mel_input = self.audio_to_mel(audio_chunk)
+            mel_input = mel_input.unsqueeze(0)  # Add batch dimension
+            
+            # Mel → Converted Mel
+            mel_output = self.model(mel_input)
+            
+            # Converted Mel → Audio
+            converted_audio = self.mel_to_audio(mel_output.squeeze(0))
+            
+            return converted_audio
+
 def generate_training_data_smart(rvc_model, audio_files, chunk_size=2048, 
-                                sample_rate=22050, overlap_ratio=0.5):
+                                sample_rate=44100, overlap_ratio=0.5):
     """
-    Smart data generation: Process full audio through RVC first,
+    Process full audio through RVC first,
     then create chunk pairs for real-time simulation
     """
     training_pairs = []
     hop_size = int(chunk_size * (1 - overlap_ratio))
+    
+    # Create processor for consistent mel conversion
+    temp_model = LightweightVoiceConverter()  # Temporary model for processor
+    processor = RealtimeAudioProcessor(temp_model, sample_rate=sample_rate)
     
     print(f"Generating training data with {chunk_size} samples per chunk...")
     
@@ -107,9 +137,9 @@ def generate_training_data_smart(rvc_model, audio_files, chunk_size=2048,
             input_chunk = original_audio[start_idx:end_idx]
             target_chunk = converted_audio_full[start_idx:end_idx]
             
-            # Convert to mel spectrograms for training
-            input_mel = audio_to_mel_tensor(input_chunk)
-            target_mel = audio_to_mel_tensor(target_chunk)
+            # Convert to mel spectrograms using RealtimeAudioProcessor for consistency
+            input_mel = processor.audio_to_mel(input_chunk)
+            target_mel = processor.audio_to_mel(target_chunk)
             
             training_pairs.append((input_mel, target_mel))
             chunk_count += 1
@@ -118,57 +148,6 @@ def generate_training_data_smart(rvc_model, audio_files, chunk_size=2048,
     
     print(f"\nTotal training pairs: {len(training_pairs)}")
     return training_pairs
-
-def audio_to_mel_tensor(audio, n_mels=80, n_fft=1024, hop_length=256):
-    """Convert audio to mel spectrogram tensor"""
-    # STFT
-    stft = librosa.stft(audio, n_fft=n_fft, hop_length=hop_length)
-    magnitude = np.abs(stft)
-    
-    # Mel filter bank
-    mel_filter = librosa.filters.mel(sr=22050, n_fft=n_fft, n_mels=n_mels)
-    mel_spec = np.dot(mel_filter, magnitude)
-    
-    # Log scale and convert to tensor
-    mel_spec_log = np.log(mel_spec + 1e-8)
-    
-    return torch.FloatTensor(mel_spec_log)
-
-def compare_approaches(rvc_model, test_audio):
-    """Compare chunk-by-chunk vs full-then-chunk approaches"""
-    
-    print("=== COMPARING DATA GENERATION APPROACHES ===")
-    
-    chunk_size = 2048
-    
-    # Approach 1: Chunk-by-chunk (original flawed approach)
-    print("\n1. Chunk-by-chunk approach:")
-    chunks = [test_audio[i:i+chunk_size] for i in range(0, len(test_audio)-chunk_size, chunk_size//2)]
-    
-    chunk_results = []
-    for i, chunk in enumerate(chunks[:3]):  # Test first 3 chunks
-        try:
-            result = rvc_model.infer(chunk)
-            chunk_results.append(result)
-            print(f"   Chunk {i+1}: Success")
-        except Exception as e:
-            print(f"   Chunk {i+1}: Failed - {e}")
-    
-    # Approach 2: Full-then-chunk (your better approach)
-    print("\n2. Full-then-chunk approach:")
-    try:
-        full_result = rvc_model.infer(test_audio)
-        print(f"   Full audio conversion: Success")
-        print(f"   Quality consistency: High (RVC had full context)")
-        
-        # Now we can chunk the high-quality result
-        full_chunks = [full_result[i:i+chunk_size] for i in range(0, len(full_result)-chunk_size, chunk_size//2)]
-        print(f"   Generated {len(full_chunks)} high-quality chunk pairs")
-        
-    except Exception as e:
-        print(f"   Full audio conversion: Failed - {e}")
-    
-    return chunk_results, full_result if 'full_result' in locals() else None
 
 def train_lightweight_model(training_pairs, epochs=50, lr=0.001, batch_size=16):
     """Train the lightweight model on the smart-generated data"""
@@ -220,39 +199,3 @@ def train_lightweight_model(training_pairs, epochs=50, lr=0.001, batch_size=16):
     
     print("Training completed!")
     return model
-
-def create_realtime_processor(model_path):
-    """Create a real-time processor for gaming"""
-    
-    class RealtimeProcessor:
-        def __init__(self, model_path):
-            self.model = LightweightVoiceConverter()
-            self.model.load_state_dict(torch.load(model_path))
-            self.model.eval()
-            
-            self.device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
-            self.model.to(self.device)
-            
-        def process_chunk(self, audio_chunk):
-            """Process a single audio chunk in real-time"""
-            with torch.no_grad():
-                # Convert to mel
-                mel_input = audio_to_mel_tensor(audio_chunk)
-                mel_input = mel_input.unsqueeze(0).to(self.device)  # Add batch dim
-                
-                # Convert
-                mel_output = self.model(mel_input)
-                
-                # Convert back to audio (simplified)
-                # In practice, you'd use a proper fast vocoder here
-                converted_audio = self.mel_to_audio_simple(mel_output.cpu().squeeze().numpy())
-                
-                return converted_audio
-        
-        def mel_to_audio_simple(self, mel_spec):
-            """Simple mel to audio conversion for real-time use"""
-            # This is a placeholder - you'd want a proper fast vocoder
-            # For now, return processed input (this is where you'd integrate a vocoder)
-            return np.random.randn(2048) * 0.1  # Placeholder
-    
-    return RealtimeProcessor(model_path)
