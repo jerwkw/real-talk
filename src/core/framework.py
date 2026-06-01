@@ -1,5 +1,8 @@
-from audio.playback import AudioCapture, AudioPlayback
-from models.models import VoiceConverter, RVCConverter, BitNetConverter, TraditionalConverter
+from audio.playback import AudioPlayback
+from audio.capture import AudioCapture
+from models.models import VoiceConverter, RVCConverter, BitNetConverter, TraditionalConverter, DistilledONNXConverter
+from core.monitor import PerformanceMonitor
+from utils.virtual_audio import VirtualAudioDevice
 import numpy as np
 import pyaudio
 import threading
@@ -20,6 +23,7 @@ class VoiceConversionFramework:
         # Available converters
         self.converters = {
             "rvc": RVCConverter(),
+            "distilled": DistilledONNXConverter(),
             "bitnet": BitNetConverter(),
             "traditional": TraditionalConverter()
         }

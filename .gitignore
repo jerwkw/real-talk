@@ -1,0 +1,30 @@
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+.venv/
+venv/
+ENV/
+*.onnx
+*.pth
+*.index
+*.zip
+*.tar.gz
+*.npy
+*.pt
+
+# OS
+.DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+ehthumbs.db
+Thumbs.db
+
+# Project folders
+temp_distill/
+training_data/
+models_store/
+distilled_store/
+*.log

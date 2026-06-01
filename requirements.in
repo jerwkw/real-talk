@@ -1,0 +1,14 @@
+rvc-python
+pyaudio
+numpy
+torch
+librosa
+soundfile
+onnx
+onnxruntime
+vocos
+fastapi
+uvicorn
+websockets
+requests
+jinja2

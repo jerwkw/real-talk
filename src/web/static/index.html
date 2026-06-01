@@ -1,0 +1,893 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-ok=1.0">
+    <meta name="description" content="Sleek, high-performance voice model distillation dashboard for real-time voice conversion.">
+    <title>Real-Talk: Distillation Dashboard</title>
+    <!-- Premium Google Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;600;800&family=Space+Grotesk:wght@400;700&display=swap" rel="stylesheet">
+    
+    <style>
+        :root {
+            --bg-base: #0B0A13;
+            --bg-card: rgba(20, 18, 35, 0.45);
+            --bg-card-hover: rgba(28, 25, 48, 0.6);
+            --border-glow: rgba(147, 51, 234, 0.35);
+            --primary: #A855F7;
+            --primary-glow: rgba(168, 85, 247, 0.4);
+            --secondary: #06B6D4;
+            --secondary-glow: rgba(6, 182, 212, 0.4);
+            --accent: #E11D48;
+            --text-main: #F3F4F6;
+            --text-muted: #9CA3AF;
+            --success: #10B981;
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+            font-family: 'Outfit', sans-serif;
+            -webkit-font-smoothing: antialiased;
+        }
+
+        body {
+            background-color: var(--bg-base);
+            color: var(--text-main);
+            min-height: 100vh;
+            overflow-x: hidden;
+            position: relative;
+        }
+
+        /* Animated Ambient Background Blobs */
+        .ambient-glow {
+            position: fixed;
+            width: 600px;
+            height: 600px;
+            border-radius: 50%;
+            background: radial-gradient(circle, var(--primary-glow) 0%, rgba(0,0,0,0) 70%);
+            top: -200px;
+            right: -100px;
+            z-index: -1;
+            filter: blur(80px);
+            animation: float-blob 25s infinite alternate;
+        }
+
+        .ambient-glow-2 {
+            position: fixed;
+            width: 500px;
+            height: 500px;
+            border-radius: 50%;
+            background: radial-gradient(circle, var(--secondary-glow) 0%, rgba(0,0,0,0) 70%);
+            bottom: -150px;
+            left: -100px;
+            z-index: -1;
+            filter: blur(80px);
+            animation: float-blob 20s infinite alternate-reverse;
+        }
+
+        @keyframes float-blob {
+            0% { transform: translate(0, 0) scale(1); }
+            50% { transform: translate(60px, 40px) scale(1.15); }
+            100% { transform: translate(-30px, -20px) scale(0.9); }
+        }
+
+        header {
+            padding: 2.5rem 2rem 1.5rem;
+            max-width: 1400px;
+            margin: 0 auto;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .logo-group h1 {
+            font-family: 'Space Grotesk', sans-serif;
+            font-size: 2.2rem;
+            font-weight: 700;
+            letter-spacing: -0.5px;
+            background: linear-gradient(135deg, #FFF 30%, var(--primary) 70%, var(--secondary) 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            display: inline-block;
+        }
+
+        .logo-group p {
+            color: var(--text-muted);
+            font-size: 0.95rem;
+            margin-top: 4px;
+        }
+
+        .status-badge {
+            background: rgba(147, 51, 234, 0.15);
+            border: 1px solid var(--primary);
+            padding: 6px 16px;
+            border-radius: 9999px;
+            font-size: 0.85rem;
+            font-weight: 600;
+            letter-spacing: 0.5px;
+            text-transform: uppercase;
+            box-shadow: 0 0 15px var(--primary-glow);
+            transition: all 0.3s ease;
+        }
+
+        main {
+            max-width: 1400px;
+            margin: 0 auto 5rem;
+            padding: 0 2rem;
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 2rem;
+        }
+
+        @media (max-width: 1024px) {
+            main {
+                grid-template-columns: 1fr;
+            }
+        }
+
+        /* Glassmorphism Card Style */
+        .glass-card {
+            background: var(--bg-card);
+            backdrop-filter: blur(16px);
+            -webkit-backdrop-filter: blur(16px);
+            border: 1px solid rgba(255, 255, 255, 0.08);
+            border-radius: 20px;
+            padding: 2rem;
+            box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.37);
+            transition: transform 0.3s ease, border-color 0.3s ease, box-shadow 0.3s ease;
+        }
+
+        .glass-card:hover {
+            border-color: var(--border-glow);
+            box-shadow: 0 8px 32px 0 rgba(147, 51, 234, 0.12);
+        }
+
+        h2 {
+            font-family: 'Space Grotesk', sans-serif;
+            font-size: 1.4rem;
+            margin-bottom: 1.5rem;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+            padding-bottom: 0.75rem;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        /* Forms & Inputs */
+        .form-group {
+            margin-bottom: 1.25rem;
+        }
+
+        label {
+            display: block;
+            font-size: 0.9rem;
+            font-weight: 600;
+            color: var(--text-muted);
+            margin-bottom: 6px;
+        }
+
+        input, select {
+            width: 100%;
+            background: rgba(255, 255, 255, 0.04);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            color: var(--text-main);
+            padding: 12px 16px;
+            border-radius: 12px;
+            font-size: 0.95rem;
+            transition: all 0.3s ease;
+            outline: none;
+        }
+
+        input:focus, select:focus {
+            border-color: var(--primary);
+            background: rgba(255, 255, 255, 0.08);
+            box-shadow: 0 0 10px rgba(168, 85, 247, 0.2);
+        }
+
+        /* Sleek Button Styles */
+        .btn {
+            background: linear-gradient(135deg, var(--primary) 0%, #7C3AED 100%);
+            color: white;
+            border: none;
+            padding: 14px 24px;
+            border-radius: 12px;
+            font-size: 1rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+            box-shadow: 0 4px 15px rgba(124, 58, 237, 0.35);
+        }
+
+        .btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 20px rgba(124, 58, 237, 0.5);
+            background: linear-gradient(135deg, #B55FE6 0%, #8b5cf6 100%);
+        }
+
+        .btn:active {
+            transform: translateY(0);
+        }
+
+        .btn-secondary {
+            background: rgba(255, 255, 255, 0.05);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            box-shadow: none;
+            color: var(--text-main);
+        }
+
+        .btn-secondary:hover {
+            background: rgba(255, 255, 255, 0.1);
+            border-color: rgba(255, 255, 255, 0.2);
+            box-shadow: none;
+        }
+
+        .btn-danger {
+            background: linear-gradient(135deg, var(--accent) 0%, #BE123C 100%);
+            box-shadow: 0 4px 15px rgba(225, 29, 72, 0.35);
+        }
+
+        .btn-danger:hover {
+            background: linear-gradient(135deg, #F43F5E 0%, #E11D48 100%);
+            box-shadow: 0 6px 20px rgba(225, 29, 72, 0.5);
+        }
+
+        .btn:disabled {
+            background: rgba(255, 255, 255, 0.08) !important;
+            color: var(--text-muted) !important;
+            box-shadow: none !important;
+            cursor: not-allowed;
+            transform: none !important;
+        }
+
+        /* Model Store Lists */
+        .store-list {
+            list-style: none;
+            max-height: 180px;
+            overflow-y: auto;
+            margin-bottom: 1.5rem;
+            border-radius: 12px;
+            background: rgba(0,0,0,0.15);
+            border: 1px solid rgba(255, 255, 255, 0.05);
+            padding: 8px;
+        }
+
+        .store-item {
+            padding: 8px 12px;
+            border-radius: 8px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            font-size: 0.9rem;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.03);
+        }
+
+        .store-item:last-child {
+            border-bottom: none;
+        }
+
+        .store-item span {
+            color: var(--text-main);
+        }
+
+        .badge-small {
+            font-size: 0.75rem;
+            padding: 2px 8px;
+            border-radius: 99px;
+            background: rgba(255,255,255,0.08);
+            color: var(--text-muted);
+        }
+
+        /* Progress Card Elements */
+        .progress-container {
+            margin-top: 1.5rem;
+        }
+
+        .progress-bar-outer {
+            height: 12px;
+            width: 100%;
+            background: rgba(255,255,255,0.05);
+            border-radius: 99px;
+            overflow: hidden;
+            border: 1px solid rgba(255,255,255,0.08);
+            margin-bottom: 8px;
+        }
+
+        .progress-bar-inner {
+            height: 100%;
+            width: 0%;
+            background: linear-gradient(90deg, var(--secondary) 0%, var(--primary) 100%);
+            border-radius: 99px;
+            box-shadow: 0 0 10px var(--primary-glow);
+            transition: width 0.3s ease;
+        }
+
+        .progress-stats {
+            display: flex;
+            justify-content: space-between;
+            font-size: 0.85rem;
+            color: var(--text-muted);
+        }
+
+        /* Console Log Wrapper */
+        .console-log {
+            font-family: 'Space Grotesk', monospace;
+            background: #030206;
+            border: 1px solid rgba(255, 255, 255, 0.06);
+            border-radius: 12px;
+            padding: 1rem;
+            height: 220px;
+            overflow-y: auto;
+            font-size: 0.85rem;
+            color: var(--secondary);
+            margin-top: 1.5rem;
+            box-shadow: inset 0 2px 8px rgba(0,0,0,0.8);
+        }
+
+        .console-line {
+            margin-bottom: 4px;
+            line-height: 1.4;
+            white-space: pre-wrap;
+        }
+
+        /* Canvas Live Chart */
+        .chart-container {
+            margin-top: 1.5rem;
+            border-radius: 12px;
+            background: rgba(0,0,0,0.25);
+            border: 1px solid rgba(255,255,255,0.05);
+            padding: 12px;
+        }
+
+        canvas {
+            width: 100% !important;
+            height: 150px !important;
+            display: block;
+        }
+
+        .live-stat-grid {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 1rem;
+            margin-top: 1rem;
+        }
+
+        .live-stat-card {
+            background: rgba(255,255,255,0.02);
+            border: 1px solid rgba(255,255,255,0.05);
+            border-radius: 10px;
+            padding: 10px;
+            text-align: center;
+        }
+
+        .live-stat-card .val {
+            font-size: 1.25rem;
+            font-weight: 700;
+            color: var(--secondary);
+        }
+
+        .live-stat-card .lbl {
+            font-size: 0.75rem;
+            color: var(--text-muted);
+            margin-top: 2px;
+        }
+
+        .flex-row {
+            display: flex;
+            gap: 1rem;
+        }
+
+        .flex-row > * {
+            flex: 1;
+        }
+    </style>
+</head>
+<body>
+    <div class="ambient-glow"></div>
+    <div class="ambient-glow-2"></div>
+
+    <header>
+        <div class="logo-group">
+            <h1>Real-Talk Voice Distiller</h1>
+            <p>High performance Spectrogram-to-Spectrogram model distillation framework</p>
+        </div>
+        <div id="statusBadge" class="status-badge">Idle</div>
+    </header>
+
+    <main>
+        <!-- LEFT PANEL: Models and Downloads -->
+        <div class="glass-card">
+            <h2>Model Management</h2>
+            
+            <!-- Download Section -->
+            <div class="form-group">
+                <label for="downloadUrl">Download RVC Model from URL</label>
+                <input type="text" id="downloadUrl" placeholder="https://voice-models.com/path-to-model.zip or .pth">
+            </div>
+            <div class="form-group">
+                <label for="downloadName">Model File Name</label>
+                <input type="text" id="downloadName" placeholder="e.g. spongebob.pth">
+            </div>
+            <button id="btnDownload" class="btn" style="width: 100%; margin-bottom: 2rem;">Download Model</button>
+
+            <!-- Store Inventory -->
+            <label>Available RVC Teacher Models (.pth)</label>
+            <ul id="rvcModelsList" class="store-list">
+                <li class="store-item"><span style="color:var(--text-muted)">Scanning store...</span></li>
+            </ul>
+
+            <label>Available Distilled Student Models (.onnx)</label>
+            <ul id="distilledModelsList" class="store-list">
+                <li class="store-item"><span style="color:var(--text-muted)">Scanning store...</span></li>
+            </ul>
+
+            <!-- Vocos status and export -->
+            <div class="form-group" style="display:flex; justify-content:space-between; align-items:center; background:rgba(255,255,255,0.02); padding:1rem; border-radius:12px; border:1px solid rgba(255,255,255,0.05)">
+                <div>
+                    <label style="margin-bottom:0">Vocos Neural Vocoder ONNX Status</label>
+                    <span id="vocosStatus" style="font-size:0.9rem; color:var(--text-muted)">Checking...</span>
+                </div>
+                <button id="btnExportVocos" class="btn btn-secondary">Export Vocos</button>
+            </div>
+        </div>
+
+        <!-- RIGHT PANEL: Training and Distillation Console -->
+        <div class="glass-card">
+            <h2>Distillation Console</h2>
+            
+            <!-- Form Config -->
+            <div class="form-group">
+                <label for="selectRvc">Select RVC Teacher Model (.pth)</label>
+                <select id="selectRvc"></select>
+            </div>
+
+            <div class="flex-row">
+                <div class="form-group">
+                    <label for="trainEpochs">Epochs</label>
+                    <input type="number" id="trainEpochs" value="30" min="1" max="500">
+                </div>
+                <div class="form-group">
+                    <label for="trainBatch">Batch Size</label>
+                    <select id="trainBatch">
+                        <option value="4">4</option>
+                        <option value="8" selected>8</option>
+                        <option value="16">16</option>
+                    </select>
+                </div>
+            </div>
+
+            <div class="form-group">
+                <label for="customDataDir">Custom Source Audio Directory (Optional)</label>
+                <input type="text" id="customDataDir" placeholder="Path to your custom folder of source WAV files">
+            </div>
+
+            <div class="flex-row" style="margin-bottom: 1.5rem;">
+                <button id="btnStartDistill" class="btn">Start Distillation</button>
+                <button id="btnStopDistill" class="btn btn-danger" disabled>Stop / Cancel</button>
+            </div>
+
+            <!-- Training progress info -->
+            <div class="progress-container">
+                <div class="progress-bar-outer">
+                    <div id="progressBar" class="progress-bar-inner"></div>
+                </div>
+                <div class="progress-stats">
+                    <span id="epochProgress">Epoch: -- / --</span>
+                    <span id="lossStat">Loss: --</span>
+                </div>
+            </div>
+
+            <!-- Training Console log -->
+            <div id="consoleLog" class="console-log">
+                <div class="console-line">Dashboard ready. Waiting for start...</div>
+            </div>
+        </div>
+
+        <!-- BOTTOM PANEL: Live Voice Changer Monitor -->
+        <div class="glass-card" style="grid-column: 1 / -1;">
+            <h2>Live Performance & Latency Monitor</h2>
+            <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom: 1rem;">
+                <div style="flex:1; margin-right: 1.5rem;">
+                    <label for="selectDistilled">Select Distilled Student Model (.onnx)</label>
+                    <select id="selectDistilled"></select>
+                </div>
+                <button id="btnToggleChanger" class="btn" style="margin-top: 1.3rem;">Start Testing Changer</button>
+            </div>
+
+            <!-- Latency display -->
+            <div class="chart-container">
+                <canvas id="latencyCanvas"></canvas>
+            </div>
+
+            <div class="live-stat-grid">
+                <div class="live-stat-card">
+                    <div id="avgLatency" class="val">-- ms</div>
+                    <div class="lbl">Avg Latency</div>
+                </div>
+                <div class="live-stat-card">
+                    <div id="maxLatency" class="val">-- ms</div>
+                    <div class="lbl">Max Latency</div>
+                </div>
+                <div class="live-stat-card">
+                    <div id="minLatency" class="val">-- ms</div>
+                    <div class="lbl">Min Latency</div>
+                </div>
+            </div>
+        </div>
+    </main>
+
+    <script>
+        // DOM Elements
+        const statusBadge = document.getElementById("statusBadge");
+        const downloadUrl = document.getElementById("downloadUrl");
+        const downloadName = document.getElementById("downloadName");
+        const btnDownload = document.getElementById("btnDownload");
+        
+        const rvcModelsList = document.getElementById("rvcModelsList");
+        const distilledModelsList = document.getElementById("distilledModelsList");
+        const vocosStatus = document.getElementById("vocosStatus");
+        const btnExportVocos = document.getElementById("btnExportVocos");
+        
+        const selectRvc = document.getElementById("selectRvc");
+        const trainEpochs = document.getElementById("trainEpochs");
+        const trainBatch = document.getElementById("trainBatch");
+        const customDataDir = document.getElementById("customDataDir");
+        
+        const btnStartDistill = document.getElementById("btnStartDistill");
+        const btnStopDistill = document.getElementById("btnStopDistill");
+        const progressBar = document.getElementById("progressBar");
+        const epochProgress = document.getElementById("epochProgress");
+        const lossStat = document.getElementById("lossStat");
+        const consoleLog = document.getElementById("consoleLog");
+        
+        const selectDistilled = document.getElementById("selectDistilled");
+        const btnToggleChanger = document.getElementById("btnToggleChanger");
+        const avgLatency = document.getElementById("avgLatency");
+        const maxLatency = document.getElementById("maxLatency");
+        const minLatency = document.getElementById("minLatency");
+        const latencyCanvas = document.getElementById("latencyCanvas");
+
+        // Canvas setup for real-time latency chart
+        const ctx = latencyCanvas.getContext("2d");
+        let latencyHistory = [];
+        const maxHistoryPoints = 60;
+
+        function resizeCanvas() {
+            latencyCanvas.width = latencyCanvas.parentElement.clientWidth;
+            latencyCanvas.height = 150;
+            drawChart();
+        }
+        window.addEventListener('resize', resizeCanvas);
+
+        function drawChart() {
+            ctx.clearRect(0, 0, latencyCanvas.width, latencyCanvas.height);
+            if (latencyHistory.length === 0) return;
+
+            // Draw grid lines
+            ctx.strokeStyle = "rgba(255, 255, 255, 0.05)";
+            ctx.lineWidth = 1;
+            for (let i = 0; i < 4; i++) {
+                let y = (latencyCanvas.height / 4) * i;
+                ctx.beginPath();
+                ctx.moveTo(0, y);
+                ctx.lineTo(latencyCanvas.width, y);
+                ctx.stroke();
+            }
+
+            // Draw latency curve
+            ctx.strokeStyle = "#06B6D4";
+            ctx.lineWidth = 2;
+            ctx.beginPath();
+            
+            const step = latencyCanvas.width / (maxHistoryPoints - 1);
+            const maxVal = 100; // Cap visual range at 100ms
+            
+            for (let i = 0; i < latencyHistory.length; i++) {
+                let x = step * i;
+                let val = latencyHistory[i];
+                let y = latencyCanvas.height - ((val / maxVal) * latencyCanvas.height);
+                if (y < 2) y = 2; // clamp top
+                if (y > latencyCanvas.height - 2) y = latencyCanvas.height - 2; // clamp bottom
+
+                if (i === 0) {
+                    ctx.moveTo(x, y);
+                } else {
+                    ctx.lineTo(x, y);
+                }
+            }
+            ctx.stroke();
+
+            // Gradient fill under the curve
+            ctx.fillStyle = "rgba(6, 182, 212, 0.15)";
+            ctx.lineTo(step * (latencyHistory.length - 1), latencyCanvas.height);
+            ctx.lineTo(0, latencyCanvas.height);
+            ctx.closePath();
+            ctx.fill();
+        }
+
+        // Load models list from server
+        async function fetchModels() {
+            try {
+                const res = await fetch("/api/list_models");
+                const data = await res.json();
+                
+                // Load RVC models list
+                rvcModelsList.innerHTML = "";
+                selectRvc.innerHTML = "";
+                if (data.rvc_models.length === 0) {
+                    rvcModelsList.innerHTML = `<li class="store-item"><span style="color:var(--text-muted)">No RVC models found</span></li>`;
+                } else {
+                    data.rvc_models.forEach(model => {
+                        const li = document.createElement("li");
+                        li.className = "store-item";
+                        li.innerHTML = `<span>${model}</span> <span class="badge-small">RVC Teacher</span>`;
+                        rvcModelsList.appendChild(li);
+                        
+                        const opt = document.createElement("option");
+                        opt.value = model;
+                        opt.textContent = model;
+                        selectRvc.appendChild(opt);
+                    });
+                }
+                
+                // Load Distilled models list
+                distilledModelsList.innerHTML = "";
+                selectDistilled.innerHTML = "";
+                if (data.distilled_models.length === 0) {
+                    distilledModelsList.innerHTML = `<li class="store-item"><span style="color:var(--text-muted)">No distilled models found</span></li>`;
+                } else {
+                    data.distilled_models.forEach(model => {
+                        const li = document.createElement("li");
+                        li.className = "store-item";
+                        li.innerHTML = `<span>${model}</span> <span class="badge-small" style="color:var(--secondary)">Distilled CPU</span>`;
+                        distilledModelsList.appendChild(li);
+                        
+                        const opt = document.createElement("option");
+                        opt.value = model;
+                        opt.textContent = model;
+                        selectDistilled.appendChild(opt);
+                    });
+                }
+                
+                // Vocos status
+                if (data.vocos_exists) {
+                    vocosStatus.textContent = "vocos.onnx is loaded and ready";
+                    vocosStatus.style.color = "var(--success)";
+                    btnExportVocos.disabled = true;
+                } else {
+                    vocosStatus.textContent = "vocos.onnx is missing. Click 'Export Vocos' to download and export.";
+                    vocosStatus.style.color = "var(--accent)";
+                    btnExportVocos.disabled = false;
+                }
+            } catch (err) {
+                console.error("Failed to load inventory:", err);
+            }
+        }
+
+        // Download trigger
+        btnDownload.addEventListener("click", async () => {
+            const url = downloadUrl.value.trim();
+            const name = downloadName.value.trim();
+            if (!url || !name) {
+                alert("Please fill in both URL and Name fields");
+                return;
+            }
+            
+            btnDownload.disabled = true;
+            btnDownload.textContent = "Downloading...";
+            
+            try {
+                const res = await fetch("/api/download_model", {
+                    method: "POST",
+                    headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify({ url, name })
+                });
+                const data = await res.json();
+                alert(`Started background download for ${data.filename}!`);
+                downloadUrl.value = "";
+                downloadName.value = "";
+                // Refresh list shortly
+                setTimeout(fetchModels, 3000);
+            } catch (err) {
+                alert("Download failed to trigger: " + err);
+            } finally {
+                btnDownload.disabled = false;
+                btnDownload.textContent = "Download Model";
+            }
+        });
+
+        // Export Vocos trigger
+        btnExportVocos.addEventListener("click", async () => {
+            btnExportVocos.disabled = true;
+            btnExportVocos.textContent = "Exporting...";
+            try {
+                await fetch("/api/export_vocos", { method: "POST" });
+                alert("Started Vocos ONNX export in background. This might take a minute...");
+                setTimeout(fetchModels, 10000);
+            } catch (e) {
+                alert("Vocos export trigger failed: " + e);
+                btnExportVocos.disabled = false;
+                btnExportVocos.textContent = "Export Vocos";
+            }
+        });
+
+        // Start training
+        btnStartDistill.addEventListener("click", async () => {
+            const rvc_model = selectRvc.value;
+            if (!rvc_model) {
+                alert("Please download and select an RVC model first");
+                return;
+            }
+            
+            btnStartDistill.disabled = true;
+            btnStopDistill.disabled = false;
+            
+            try {
+                await fetch("/api/start_distillation", {
+                    method: "POST",
+                    headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify({
+                        rvc_model,
+                        epochs: parseInt(trainEpochs.value),
+                        batch_size: parseInt(trainBatch.value),
+                        custom_source_dir: customDataDir.value.trim()
+                    })
+                });
+                
+                // Clear console log
+                consoleLog.innerHTML = "";
+            } catch (err) {
+                alert("Failed to start training: " + err);
+                btnStartDistill.disabled = false;
+                btnStopDistill.disabled = true;
+            }
+        });
+
+        // Stop training
+        btnStopDistill.addEventListener("click", async () => {
+            btnStopDistill.disabled = true;
+            try {
+                await fetch("/api/stop_distillation", { method: "POST" });
+            } catch (err) {
+                console.error("Stop failed:", err);
+            }
+        });
+
+        // Real-time voice changer testing
+        let changerActive = false;
+        btnToggleChanger.addEventListener("click", async () => {
+            const model_name = selectDistilled.value;
+            if (!model_name) {
+                alert("Please select a distilled model to test");
+                return;
+            }
+            
+            btnToggleChanger.disabled = true;
+            const action = changerActive ? "stop" : "start";
+            
+            try {
+                const res = await fetch("/api/voice_changer", {
+                    method: "POST",
+                    headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify({ model_name, action })
+                });
+                
+                const data = await res.json();
+                if (data.status === "active") {
+                    changerActive = true;
+                    btnToggleChanger.textContent = "Stop Testing Changer";
+                    btnToggleChanger.classList.add("btn-danger");
+                } else {
+                    changerActive = false;
+                    btnToggleChanger.textContent = "Start Testing Changer";
+                    btnToggleChanger.classList.remove("btn-danger");
+                }
+            } catch (err) {
+                alert("Failed to toggle voice changer: " + err);
+            } finally {
+                btnToggleChanger.disabled = false;
+            }
+        });
+
+        // Setup WebSocket for training updates
+        let trainWs;
+        function connectTrainingWS() {
+            const loc = window.location;
+            const wsUri = (loc.protocol === "https:" ? "wss:" : "ws:") + "//" + loc.host + "/ws/training";
+            
+            trainWs = new WebSocket(wsUri);
+            trainWs.onmessage = function(event) {
+                const data = JSON.parse(event.data);
+                
+                // Update Badge & buttons
+                statusBadge.textContent = data.status;
+                if (data.status === "training" || data.status === "preparing") {
+                    statusBadge.style.background = "rgba(225,29,72,0.15)";
+                    statusBadge.style.border = "1px solid var(--accent)";
+                    statusBadge.style.boxShadow = "0 0 15px rgba(225,29,72,0.4)";
+                    btnStartDistill.disabled = true;
+                    btnStopDistill.disabled = false;
+                } else {
+                    statusBadge.style.background = "rgba(147, 51, 234, 0.15)";
+                    statusBadge.style.border = "1px solid var(--primary)";
+                    statusBadge.style.boxShadow = "0 0 15px var(--primary-glow)";
+                    btnStartDistill.disabled = false;
+                    btnStopDistill.disabled = true;
+                    fetchModels(); // reload models inventory once done training
+                }
+                
+                // Update Progress metrics
+                progressBar.style.width = data.progress + "%";
+                epochProgress.textContent = `Epoch: ${data.current_epoch} / ${data.total_epochs}`;
+                lossStat.textContent = data.current_loss > 0 ? `Loss: ${data.current_loss.toFixed(6)}` : "Loss: --";
+                
+                // Stream logs
+                if (data.logs && data.logs.length > 0) {
+                    consoleLog.innerHTML = "";
+                    data.logs.forEach(line => {
+                        const div = document.createElement("div");
+                        div.className = "console-line";
+                        div.textContent = line;
+                        consoleLog.appendChild(div);
+                    });
+                    // scroll to bottom
+                    consoleLog.scrollTop = consoleLog.scrollHeight;
+                }
+            };
+            
+            trainWs.onclose = function() {
+                setTimeout(connectTrainingWS, 3000); // retry connect
+            };
+        }
+
+        // Setup WebSocket for latency metrics
+        let metricsWs;
+        function connectMetricsWS() {
+            const loc = window.location;
+            const wsUri = (loc.protocol === "https:" ? "wss:" : "ws:") + "//" + loc.host + "/ws/metrics";
+            
+            metricsWs = new WebSocket(wsUri);
+            metricsWs.onmessage = function(event) {
+                const data = JSON.parse(event.data);
+                if (data.running) {
+                    avgLatency.textContent = data.avg_latency.toFixed(1) + " ms";
+                    maxLatency.textContent = data.max_latency.toFixed(1) + " ms";
+                    minLatency.textContent = data.min_latency.toFixed(1) + " ms";
+                    
+                    // Add current latency point to history list
+                    latencyHistory.push(data.avg_latency);
+                    if (latencyHistory.length > maxHistoryPoints) {
+                        latencyHistory.shift();
+                    }
+                    drawChart();
+                } else {
+                    avgLatency.textContent = "-- ms";
+                    maxLatency.textContent = "-- ms";
+                    minLatency.textContent = "-- ms";
+                    latencyHistory = [];
+                    drawChart();
+                }
+            };
+            
+            metricsWs.onclose = function() {
+                setTimeout(connectMetricsWS, 3000);
+            };
+        }
+
+        // Initial setup
+        window.addEventListener('load', () => {
+            fetchModels();
+            resizeCanvas();
+            connectTrainingWS();
+            connectMetricsWS();
+        });
+    </script>
+</body>
+</html>

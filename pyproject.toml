@@ -1,0 +1,28 @@
+[project]
+name = "real-talk"
+version = "0.1.0"
+description = "Simple framework for testing models for real-time voice conversion"
+readme = "README.md"
+requires-python = ">=3.9,<3.12"
+dependencies = [
+    "numpy",
+    "torch",
+    "librosa",
+    "soundfile",
+    "onnx",
+    "onnxruntime<1.19",
+    "vocos",
+    "fastapi",
+    "uvicorn",
+    "websockets",
+    "requests",
+    "jinja2",
+    "pyaudio",
+    "rvc-python",
+    "onnxscript",
+]
+
+[dependency-groups]
+dev = [
+    "pytest",
+]
